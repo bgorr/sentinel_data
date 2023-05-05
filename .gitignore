@@ -3,3 +3,6 @@ sentinel_images_texas
 geojsons
 __pycache__
 plumes
+potential_images
+new_plumes
+plume_geojsons

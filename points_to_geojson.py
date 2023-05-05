@@ -3,7 +3,7 @@ import csv
 import json
 
 points = []
-with open("./tx_plume_locations.txt") as csvfile:
+with open("./plume_locations.txt") as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
         points.append([float(row[0]), float(row[1])])
@@ -18,5 +18,5 @@ for i in range(len(points)):
         "type": "FeatureCollection",
         "features": features
     }
-    with open('./geojsons/tx_plume_'+str(i)+'.geojson', 'w') as fp:
+    with open('./plume_geojsons/plume_'+str(i)+'.geojson', 'w') as fp:
         json.dump(x, fp)

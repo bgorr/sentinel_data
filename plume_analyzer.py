@@ -43,10 +43,10 @@ def get_tblr(array,image_size): # returns top bottom left right image dims
     return top, bottom, left, right
 
 # assign directory
-directory = "./sentinel_images_texas/tx_plume_11.geojson/"
+directory = "./potential_images/"
 
 points = []
-with open("./tx_plume_locations.txt") as csvfile:
+with open("./plume_locations.txt") as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
         points.append([float(row[0]), float(row[1])])
@@ -73,16 +73,21 @@ for filename in os.listdir(directory):
         twenty_meter_data_name = subdatasets[1][0]
         print(twenty_meter_data_name)
         twenty_meter_data = gdal.Open(twenty_meter_data_name, gdal.GA_ReadOnly)
-        print("opened!")
         twenty_meter_data = twenty_meter_data.ReadAsArray()
         print(twenty_meter_data.shape)
+        sixty_meter_data_name = subdatasets[2][0]
+        print(sixty_meter_data_name)
+        sixty_meter_data = gdal.Open(sixty_meter_data_name, gdal.GA_ReadOnly)
+        sixty_meter_data = sixty_meter_data.ReadAsArray()
+        print(sixty_meter_data.shape)
         res = re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", footprint_string)
         ul = (float(res[0]),float(res[1]))
         lr = (float(res[4]),float(res[5]))
         # print(ul)
         # print(lr)
         array = np.asarray(mydata)
-        twenty_meter_array = np.asarray(twenty_meter_data)       
+        twenty_meter_array = np.asarray(twenty_meter_data)
+        sixty_meter_array = np.asarray(sixty_meter_data)  
         blue = array[0,:,:]
         blue_bn = convert_dtype(normalize(blue))
         green = array[1,:,:]
@@ -91,8 +96,14 @@ for filename in os.listdir(directory):
         red_bn = convert_dtype(normalize(red))
         nir = array[3,:,:]
         nir_bn = convert_dtype(normalize(nir))
-        swir = twenty_meter_array[5,:,:]
+        swir = twenty_meter_array[4,:,:]
         swir_bn = convert_dtype(normalize(swir))
+        swir2 = twenty_meter_array[5,:,:]
+        swir2_bn = convert_dtype(normalize(swir2))
+        aot = twenty_meter_array[6,:,:]
+        aot_bn = convert_dtype(normalize(aot))
+        wvp = twenty_meter_array[10,:,:]
+        wvp_bn = convert_dtype(normalize(wvp))
         rgb_array = np.dstack((red_bn,green_bn,blue_bn))
         full_data = im.fromarray(rgb_array)  
         #full_data.save('full_'+str(file_count)+'.png')
@@ -115,8 +126,7 @@ for filename in os.listdir(directory):
             image_size = 512
             top,bottom,left,right = get_tblr(array,image_size)
             ts,bs,ls,rs = get_tblr(twenty_meter_array,256)
-            display_image_size = 256
-            td,bd,ld,rd = get_tblr(array,display_image_size)
+            #tw,bw,lw,rw = get_tblr(sixty_meter_array,256)
 
             # print(top)
             # print(bottom)
@@ -127,20 +137,17 @@ for filename in os.listdir(directory):
             blue_slice = blue[top:bottom,left:right]
             nir_slice = nir[top:bottom,left:right]
             swir_slice = swir[ts:bs,ls:rs]
+            swir2_slice = swir2[ts:bs,ls:rs]
+            aot_slice = aot[ts:bs,ls:rs]
+            wvp_slice = wvp[ts:bs,ls:rs]
             red_slice_n = convert_dtype(normalize(red_slice))
             green_slice_n = convert_dtype(normalize(green_slice))
             blue_slice_n = convert_dtype(normalize(blue_slice))
             nir_slice_n = convert_dtype(normalize(nir_slice))
             swir_slice_n = convert_dtype(normalize(swir_slice))
-            red_d = red[td:bd,ld:rd]
-            green_d = green[td:bd,ld:rd]
-            blue_d = blue[td:bd,ld:rd]
-            nir_d = nir[td:bd,ld:rd]
-            rdn = convert_dtype(normalize(red_d))
-            gdn = convert_dtype(normalize(green_d))
-            bdn = convert_dtype(normalize(blue_d))
-            ndn = convert_dtype(normalize(nir_d))
-            rgbd = np.dstack((rdn,gdn,bdn))
+            swir2_slice_n = convert_dtype(normalize(swir2_slice))
+            aot_slice_n = convert_dtype(normalize(aot_slice))
+            wvp_slice_n = convert_dtype(normalize(wvp_slice))
 
             # print(img_array)
             rgb_slice = np.dstack((red_slice_n,green_slice_n,blue_slice_n))
@@ -148,21 +155,25 @@ for filename in os.listdir(directory):
             # saving the final output 
             # as a PNG file
             #data.save('slice_'+str(lat)+'_'+str(lon)+'_'+str(file_count)+'.png')
-            gmap_url = "https://maps.googleapis.com/maps/api/staticmap?center="+str(lat)+","+str(lon)+"&zoom=16&maptype=satellite&size=512x512&key=AIzaSyBg-oR8oz0Ty4CLwrycLfLbh2qIq8FGUH4"
+            gmap_url = "https://maps.googleapis.com/maps/api/staticmap?center="+str(lat)+","+str(lon)+"&zoom=15&maptype=satellite&size=512x512&key=AIzaSyBg-oR8oz0Ty4CLwrycLfLbh2qIq8FGUH4"
             urllib.request.urlretrieve(gmap_url, "./xd.jpg")
             gmap_image = im.open("./xd.jpg").convert("RGB")
             #gmap_image.show()
             #plt.figure()
 
             #subplot(r,c) provide the no. of rows and columns
-            f, axarr = plt.subplots(1,4)
+            f, axarr = plt.subplots(2,4)
             f.set_size_inches(10,8)
 
             # use the created array to output your multiple images. In this case I have stacked 4 images vertically
-            axarr[0].imshow(rgb_slice)
-            axarr[1].imshow(nir_slice_n)
-            axarr[2].imshow(swir_slice_n)
-            axarr[3].imshow(np.asarray(gmap_image))
+            axarr[0,0].imshow(rgb_slice)
+            axarr[0,1].imshow(nir_slice_n)
+            axarr[0,2].imshow(swir_slice_n)
+            axarr[0,3].imshow(swir2_slice_n)
+            axarr[1,0].imshow(aot_slice)
+            axarr[1,1].imshow(wvp_slice_n)
+            axarr[1,2].imshow(np.asarray(gmap_image))
+            
             plt.show()
             location_good = input("Is the location good?")
             if "y" in location_good:
