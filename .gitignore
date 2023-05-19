@@ -6,3 +6,7 @@ plumes
 potential_images
 new_plumes
 plume_geojsons
+cloud_images
+cloud_geojsons
+smokestack_geojsons
+smokestack_images

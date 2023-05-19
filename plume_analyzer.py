@@ -43,10 +43,10 @@ def get_tblr(array,image_size): # returns top bottom left right image dims
     return top, bottom, left, right
 
 # assign directory
-directory = "./potential_images/"
+directory = "./cloud_images/"
 
 points = []
-with open("./plume_locations.txt") as csvfile:
+with open("./cloud_image.txt") as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
         points.append([float(row[0]), float(row[1])])
@@ -81,6 +81,27 @@ for filename in os.listdir(directory):
         sixty_meter_data = sixty_meter_data.ReadAsArray()
         print(sixty_meter_data.shape)
         res = re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", footprint_string)
+        print(footprint_string)
+        print(res)
+        image_points = []
+        ul = (0.0,0.0)
+        if len(res) > 10:
+            continue
+        for i in range(int(len(res)/2)):
+            image_points.append((float(res[2*i]),float(res[2*i+1])))
+        leftmost = 180
+        uppermost = -90
+        for img_pt in image_points:
+            if img_pt[0] < leftmost and img_pt[1] > uppermost:
+                ul = img_pt
+                leftmost = img_pt[0]
+                uppermost = img_pt[1]
+        furthest_dist = 0
+        for img_pt in image_points:
+            dist = np.sqrt((ul[0]-img_pt[0])**2+(ul[1]-img_pt[1])**2)
+            if dist > furthest_dist:
+                lr = img_pt
+                furthest_dist = dist
         ul = (float(res[0]),float(res[1]))
         lr = (float(res[4]),float(res[5]))
         # print(ul)
@@ -111,6 +132,8 @@ for filename in os.listdir(directory):
         for point in points:
             lat = point[0]
             lon = point[1]
+            print(lat)
+            print(lon)
             if(ul[0] < lon < lr[0]):
                 left_right_frac = (ul[0]-lon)/(ul[0]-lr[0])
             else:
@@ -119,9 +142,8 @@ for filename in os.listdir(directory):
                 up_down_frac = (ul[1]-lat)/(ul[1]-lr[1])
             else:
                 continue
-            # print(left_right_frac)
-            # print(up_down_frac)
-
+            print(left_right_frac)
+            print(up_down_frac)
 
             image_size = 512
             top,bottom,left,right = get_tblr(array,image_size)
@@ -180,8 +202,10 @@ for filename in os.listdir(directory):
                 good_locations.append(point)
                 plume_present = input("Is there a plume in the image?")
                 if "y" in plume_present:
-                    new_dir = "./new_plumes/plume"+str(lat)+'_'+str(lon)+'_'+str(file_count)
+                    new_dir = "./new_plumes/plume"+str(lat)+'_'+str(lon)+'_'+str(file_count)+"/"
                     os.mkdir(new_dir)
+                    rgb_slice_n = np.dstack([red_slice_n,green_slice_n,blue_slice_n])
+                    im.fromarray(rgb_slice_n).save(new_dir+"rgb.png")
                     im.fromarray(red_slice_n).save(new_dir+'red.png')
                     im.fromarray(green_slice_n).save(new_dir+'green.png')
                     im.fromarray(blue_slice_n).save(new_dir+'blue.png')
@@ -195,7 +219,7 @@ for filename in os.listdir(directory):
 
     file_count += 1
 
-with open("./good_locations.csv","w") as csvfile:
+with open("./good_smokestacks.csv","w") as csvfile:
     csvwriter = csv.writer(csvfile)
     for loc in good_locations:
         csvwriter.writerow(loc)
